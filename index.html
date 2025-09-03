@@ -1,0 +1,253 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Single-file Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#6366f1;
+      --glass: rgba(255,255,255,0.03);
+      --radius:12px;
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041122 0%, #07182a 100%);color:#e6eef6}
+    .app{display:grid;grid-template-columns:260px 1fr;gap:20px;min-height:100vh;padding:28px}
+    /* Sidebar */
+    .sidebar{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:var(--radius);padding:20px;min-height:calc(100vh - 56px)}
+    .brand{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700}
+    .nav{display:flex;flex-direction:column;gap:8px}
+    .nav a{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;color:var(--muted);text-decoration:none}
+    .nav a.active{background:rgba(255,255,255,0.04);color:#fff}
+    .nav a:hover{background:rgba(255,255,255,0.02);color:#fff}
+    .small{font-size:12px;color:var(--muted)}
+    /* Main */
+    .main{display:flex;flex-direction:column;gap:18px}
+    .topbar{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .search{flex:1;display:flex;align-items:center;gap:12px;background:var(--glass);padding:10px;border-radius:12px}
+    .search input{flex:1;background:transparent;border:0;outline:none;color:inherit}
+    .actions{display:flex;gap:10px;align-items:center}
+    .btn{background:rgba(255,255,255,0.03);padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .kpi{display:flex;justify-content:space-between;align-items:center}
+    .kpi .value{font-size:20px;font-weight:700}
+    .chart-wrap{grid-column:span 2}
+    .table{overflow:auto}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.03)}
+    th{font-size:12px;color:var(--muted)}
+    tr:hover td{background:rgba(255,255,255,0.01)}
+    .badge{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.03);font-weight:600}
+    footer{opacity:0.6;font-size:13px}
+    /* responsive */
+    @media (max-width:900px){.app{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}.chart-wrap{grid-column:span 2}}
+    @media (max-width:520px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">DB</div>
+        <div>
+          <div style="font-weight:700">Aurora Dashboard</div>
+          <div class="small">Overview & analytics</div>
+        </div>
+      </div><nav class="nav" aria-label="Main navigation">
+    <a href="#" class="active">🏠 Dashboard</a>
+    <a href="#">📊 Analytics</a>
+    <a href="#">🧾 Reports</a>
+    <a href="#">👥 Customers</a>
+    <a href="#">⚙ Settings</a>
+  </nav>
+
+  <div style="margin-top:18px">
+    <div class="small">Storage</div>
+    <div style="height:8px;background:rgba(255,255,255,0.03);border-radius:999px;margin-top:8px;overflow:hidden">
+      <div style="width:62%;height:100%;background:linear-gradient(90deg,var(--accent),#06b6d4)"></div>
+    </div>
+    <div class="small" style="margin-top:8px">62% used • 37GB / 60GB</div>
+  </div>
+
+  <div style="position:absolute;left:28px;bottom:28px;right:28px">
+    <div class="small">Account</div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
+      <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#334155,#1f2937);display:flex;align-items:center;justify-content:center">MV</div>
+      <div>
+        <div style="font-weight:600">Manisha V.</div>
+        <div class="small">Admin</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2"></circle></svg>
+      <input id="search" placeholder="Search reports, users, orders..." />
+      <div style="font-size:13px;color:var(--muted)">/</div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btn-refresh">⟳ Refresh</button>
+      <div class="btn" id="btn-theme">🌙</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="badge">New</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="grid">
+    <div class="card">
+      <div class="kpi">
+        <div>
+          <div class="small">Total Revenue</div>
+          <div class="value">$42,730</div>
+        </div>
+        <div class="small">+8.4%</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="kpi">
+        <div>
+          <div class="small">Active Users</div>
+          <div class="value">12,402</div>
+        </div>
+        <div class="small">+2.1%</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="kpi">
+        <div>
+          <div class="small">New Leads</div>
+          <div class="value">1,140</div>
+        </div>
+        <div class="small">-1.2%</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="kpi">
+        <div>
+          <div class="small">Conversion</div>
+          <div class="value">5.2%</div>
+        </div>
+        <div class="small">+0.5%</div>
+      </div>
+    </div>
+
+    <div class="card chart-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700">Sales (last 30 days)</div>
+        <div class="small">Updated: <span id="updated">—</span></div>
+      </div>
+      <canvas id="salesChart" height="120"></canvas>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">Top Products</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between"><div>Aurora Lamp</div><div class="small">$4,120</div></div>
+        <div style="display:flex;justify-content:space-between"><div>Stellar Chair</div><div class="small">$3,210</div></div>
+        <div style="display:flex;justify-content:space-between"><div>Glow Desk</div><div class="small">$2,890</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="grid-column:span 2">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700">Recent Orders</div>
+        <div class="small">Showing 10</div>
+      </div>
+      <div class="table">
+        <table>
+          <thead>
+            <tr><th>Order</th><th>Customer</th><th>Date</th><th>Amount</th><th>Status</th></tr>
+          </thead>
+          <tbody id="orders">
+            <!-- data injected by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+  <footer>
+    © <span id="year"></span> Aurora Dashboard • Built with ❤️
+  </footer>
+</main>
+
+  </div>  <script>
+    // small demo data + behaviors
+    const now = new Date();
+    document.getElementById('year').textContent = now.getFullYear();
+    document.getElementById('updated').textContent = now.toLocaleString();
+
+    // Sales chart
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    const labels = Array.from({length:30}).map((_,i)=>{
+      const d = new Date(); d.setDate(d.getDate()- (29-i));
+      return (d.getMonth()+1) + '/' + d.getDate();
+    });
+    const data = labels.map((_,i)=> Math.round(200 + Math.random()*900 + Math.sin(i/3)*120));
+
+    const salesChart = new Chart(ctx,{
+      type:'line',
+      data:{labels, datasets:[{label:'Sales', data, tension:0.35, fill:true, backgroundColor:'rgba(99,102,241,0.12)', borderColor:'rgba(99,102,241,1)', pointRadius:0}]},
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(255,255,255,0.03)'}}}
+    });
+
+    // populate orders
+    const orders = [
+      {id:2314,name:'Ravi K',date:'2025-08-29',amount:249.00,status:'Delivered'},
+      {id:2315,name:'Neha S',date:'2025-08-30',amount:129.50,status:'Processing'},
+      {id:2316,name:'Asha P',date:'2025-08-31',amount:499.00,status:'Cancelled'},
+      {id:2317,name:'Sam T',date:'2025-09-01',amount:79.99,status:'Shipped'},
+      {id:2318,name:'Maya R',date:'2025-09-02',amount:349.95,status:'Delivered'},
+      {id:2319,name:'Ishan V',date:'2025-09-02',amount:199.00,status:'Processing'},
+      {id:2320,name:'Priya L',date:'2025-09-03',amount:59.99,status:'Delivered'},
+      {id:2321,name:'Karan D',date:'2025-09-03',amount:899.00,status:'Processing'},
+      {id:2322,name:'Ritu M',date:'2025-09-03',amount:129.00,status:'Shipped'},
+      {id:2323,name:'Vikram A',date:'2025-09-03',amount:39.00,status:'Delivered'}
+    ];
+
+    function statusBadge(s){
+      if(s==='Delivered') return '<span class="badge">Delivered</span>';
+      if(s==='Processing') return '<span style="background:rgba(246,189,39,0.08);padding:6px 10px;border-radius:999px;font-weight:600;color:#f59e0b">Processing</span>';
+      if(s==='Shipped') return '<span style="background:rgba(16,185,129,0.06);padding:6px 10px;border-radius:999px;font-weight:600;color:#10b981">Shipped</span>';
+      if(s==='Cancelled') return '<span style="background:rgba(239,68,68,0.06);padding:6px 10px;border-radius:999px;font-weight:600;color:#ef4444">Cancelled</span>';
+      return '<span class="badge">'+s+'</span>';
+    }
+
+    const tb = document.getElementById('orders');
+    tb.innerHTML = orders.map(o=>`<tr><td>#${o.id}</td><td>${o.name}</td><td>${o.date}</td><td>$${o.amount.toFixed(2)}</td><td>${statusBadge(o.status)}</td></tr>`).join('');
+
+    // simple interactions
+    document.getElementById('btn-theme').addEventListener('click',()=>{
+      document.documentElement.style.setProperty('--bg', getComputedStyle(document.documentElement).getPropertyValue('--bg') === '#0f1724' ? '#fff' : '#0f1724');
+      // quick toggle to simulate theme change (for demo only)
+      alert('Theme toggle (demo)');
+    });
+    document.getElementById('btn-refresh').addEventListener('click',()=>{
+      const t = new Date(); document.getElementById('updated').textContent = t.toLocaleString();
+      salesChart.data.datasets[0].data = salesChart.data.labels.map(()=> Math.round(200 + Math.random()*900));
+      salesChart.update();
+    });
+
+    // keyboard shortcut: focus search with '/'
+    window.addEventListener('keydown', (e)=>{
+      if(e.key === '/'){
+        const s = document.getElementById('search');
+        if(document.activeElement !== s){ e.preventDefault(); s.focus(); }
+      }
+    });
+  </script></body>
+  </html>
